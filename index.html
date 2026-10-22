@@ -10,6 +10,9 @@
 </head>
 <body>
 
+    <!-- OVERLAY MÓVIL PARA CERRAR EL MENÚ DESLIZANTE -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMenuMobile(false)"></div>
+
     <!-- ACCESO / LOGIN POR CÓDIGO -->
     <div id="login-screen" class="login-overlay">
         <div class="login-card">
@@ -41,9 +44,14 @@
     <!-- INTERFAZ PRINCIPAL -->
     <div id="app-container" class="app-container">
 
-        <!-- HEADER CON LOGO NAMEPERS -->
+        <!-- HEADER CON LOGO NAMEPERS Y BOTÓN MENÚ -->
         <header class="app-header">
             <div class="header-left">
+                <!-- BOTÓN DE MENÚ (SOLO VISIBLE EN CELULAR) -->
+                <button type="button" class="btn-toggle-menu" onclick="toggleMenuMobile(true)" title="Abrir Menú">
+                    <i class="icon-menu"></i>
+                </button>
+
                 <div class="brand">
                     <i class="icon-dumbbell"></i>
                     <span>NAME<span class="highlight-pers">PERS</span></span>
@@ -75,8 +83,16 @@
 
         <div class="app-layout">
 
-            <!-- SIDEBAR LATERAL -->
-            <aside class="app-sidebar">
+            <!-- SIDEBAR LATERAL (FIJO EN PC, DESLIZANTE EN CELULAR) -->
+            <aside class="app-sidebar" id="app-sidebar">
+                
+                <div class="sidebar-mobile-header">
+                    <div class="brand">
+                        <i class="icon-dumbbell"></i>
+                        <span>NAME<span class="highlight-pers">PERS</span></span>
+                    </div>
+                    <button type="button" class="btn-close-sidebar" onclick="toggleMenuMobile(false)"><i class="icon-x"></i></button>
+                </div>
                 
                 <!-- SECCIÓN SOPORTE -->
                 <div class="sidebar-section student-only">
@@ -271,27 +287,79 @@
                     </form>
                 </div>
 
-                <!-- APARTADO DE MÉTRICAS -->
+                <!-- APARTADO DE MÉTRICAS / HISTORIAL Y COMPARATIVA -->
                 <div class="metrics-evolution-section" id="metrics-section-container">
                     <div class="metrics-section-header">
                         <div class="metrics-header-title">
                             <i class="icon-trending-up"></i>
                             <div>
-                                <h3>Evolución Antropométrica y Métricas Corporales</h3>
-                                <p class="subtitle">Seguimiento nutricional y composición corporal individual de <strong id="metrics-alumno-name">MatiasG</strong></p>
+                                <h3>Evolución Antropométrica e Historial de Mediciones</h3>
+                                <p class="subtitle">Seguimiento corporal con fechas e historial para <strong id="metrics-alumno-name">MatiasG</strong></p>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-xs btn-dark teacher-only" onclick="abrirModalMetricas()"><i class="icon-sliders"></i> Actualizar Mediciones</button>
+                        <button type="button" class="btn btn-xs btn-yellow teacher-only" onclick="abrirModalMetricas()"><i class="icon-plus-circle"></i> Registrar Nueva Medición</button>
                     </div>
 
+                    <!-- SELECTOR DE FECHAS Y MODO COMPARATIVO -->
+                    <div class="comparison-toolbar">
+                        <div class="comp-select-group">
+                            <label><i class="icon-calendar"></i> Medición A (Base):</label>
+                            <select id="select-fecha-a" onchange="actualizarComparativaMetricas()"></select>
+                        </div>
+                        <div class="comp-select-group">
+                            <label><i class="icon-calendar"></i> Medición B (Comparar):</label>
+                            <select id="select-fecha-b" onchange="actualizarComparativaMetricas()"></select>
+                        </div>
+                        <div class="comp-status-badge" id="comp-status-badge">
+                            <span>Diferencia de tiempo: <strong>30 días</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- TARJETAS DE MÉTRICAS CON INDICADOR DE CAMBIO/DIFERENCIA -->
                     <div class="body-metrics-grid">
-                        <div class="b-metric-card"><span class="bm-label">Peso Total</span><div class="bm-value-row"><span class="bm-value" id="val-peso">78.5</span><span class="bm-unit">kg</span></div><span class="bm-trend positive"><i class="icon-arrow-down-right"></i> Controlado</span></div>
-                        <div class="b-metric-card"><span class="bm-label">Masa Muscular</span><div class="bm-value-row"><span class="bm-value" id="val-musculo">41.2</span><span class="bm-unit">kg</span></div><span class="bm-trend positive"><i class="icon-arrow-up-right"></i> Magro</span></div>
-                        <div class="b-metric-card"><span class="bm-label">Grasa Corporal</span><div class="bm-value-row"><span class="bm-value" id="val-grasa">14.8</span><span class="bm-unit">%</span></div><span class="bm-trend positive"><i class="icon-arrow-down-right"></i> Óptimo</span></div>
-                        <div class="b-metric-card"><span class="bm-label">Perímetro Cintura</span><div class="bm-value-row"><span class="bm-value" id="val-cintura">79.0</span><span class="bm-unit">cm</span></div><span class="bm-trend neutral"><i class="icon-minus"></i> Estable</span></div>
-                        <div class="b-metric-card"><span class="bm-label">Perímetro Biceps</span><div class="bm-value-row"><span class="bm-value" id="val-biceps">38.5</span><span class="bm-unit">cm</span></div><span class="bm-trend positive"><i class="icon-arrow-up-right"></i> Hipertrofia</span></div>
+                        <div class="b-metric-card">
+                            <span class="bm-label">Peso Total</span>
+                            <div class="bm-value-row">
+                                <span class="bm-value" id="val-peso">78.5</span>
+                                <span class="bm-unit">kg</span>
+                            </div>
+                            <span class="bm-trend" id="diff-peso">0.0 kg</span>
+                        </div>
+                        <div class="b-metric-card">
+                            <span class="bm-label">Masa Muscular</span>
+                            <div class="bm-value-row">
+                                <span class="bm-value" id="val-musculo">41.2</span>
+                                <span class="bm-unit">kg</span>
+                            </div>
+                            <span class="bm-trend" id="diff-musculo">0.0 kg</span>
+                        </div>
+                        <div class="b-metric-card">
+                            <span class="bm-label">Grasa Corporal</span>
+                            <div class="bm-value-row">
+                                <span class="bm-value" id="val-grasa">14.8</span>
+                                <span class="bm-unit">%</span>
+                            </div>
+                            <span class="bm-trend" id="diff-grasa">0.0 %</span>
+                        </div>
+                        <div class="b-metric-card">
+                            <span class="bm-label">Perímetro Cintura</span>
+                            <div class="bm-value-row">
+                                <span class="bm-value" id="val-cintura">79.0</span>
+                                <span class="bm-unit">cm</span>
+                            </div>
+                            <span class="bm-trend" id="diff-cintura">0.0 cm</span>
+                        </div>
+                        <div class="b-metric-card">
+                            <span class="bm-label">Perímetro Bíceps</span>
+                            <div class="bm-value-row">
+                                <span class="bm-value" id="val-biceps">38.5</span>
+                                <span class="bm-unit">cm</span>
+                            </div>
+                            <span class="bm-trend" id="diff-biceps">0.0 cm</span>
+                        </div>
                     </div>
 
+                    <!-- GRÁFICO SVG DINÁMICO REFLEJANDO EL HISTORIAL -->
                     <div class="chart-metrics-wrapper">
                         <div class="chart-legend-bar">
                             <span class="legend-item"><span class="dot-color yellow"></span> Peso Corporal (kg)</span>
@@ -299,19 +367,33 @@
                             <span class="legend-item"><span class="dot-color red"></span> % Grasa Corporal</span>
                         </div>
                         <div class="metrics-svg-box">
-                            <svg class="svg-metrics-chart" viewBox="0 0 600 140">
-                                <line x1="0" y1="30" x2="600" y2="30" stroke="rgba(255,255,255,0.05)"/>
-                                <line x1="0" y1="70" x2="600" y2="70" stroke="rgba(255,255,255,0.05)"/>
-                                <line x1="0" y1="110" x2="600" y2="110" stroke="rgba(255,255,255,0.05)"/>
-                                <path d="M10 110 L120 95 L240 85 L360 70 L480 60 L590 50" fill="none" stroke="#FFD400" stroke-width="3"/>
-                                <circle cx="590" cy="50" r="4" fill="#FFD400"/>
-                                <path d="M10 120 L120 115 L240 105 L360 95 L480 88 L590 80" fill="none" stroke="#22C55E" stroke-width="3"/>
-                                <circle cx="590" cy="80" r="4" fill="#22C55E"/>
-                                <path d="M10 40 L120 50 L240 65 L360 80 L480 95 L590 105" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="4"/>
+                            <svg class="svg-metrics-chart" id="svg-historial-chart" viewBox="0 0 600 140">
+                                <!-- Dibujado dinámicamente por JS -->
                             </svg>
                         </div>
-                        <div class="chart-timeline-labels">
-                            <span>Mayo</span><span>Junio</span><span>Julio</span><span>Agosto</span><span>Septiembre</span><span>Octubre (Actual)</span>
+                        <div class="chart-timeline-labels" id="chart-timeline-dates">
+                            <!-- Fechas generadas dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- LISTA DE REGISTROS/HISTORIAL CON OPCIÓN DE ELIMINAR REGISTROS -->
+                    <div class="history-list-wrapper">
+                        <h4><i class="icon-list"></i> Historial de Mediciones Guardadas</h4>
+                        <div class="history-table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Peso</th>
+                                        <th>Músculo</th>
+                                        <th>Grasa</th>
+                                        <th>Cintura</th>
+                                        <th>Bícep</th>
+                                        <th class="teacher-only">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-historial-metricas"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -339,14 +421,31 @@
         </div>
     </div>
 
+    <!-- MODAL REGISTRAR MEDICIÓN CON FECHA -->
     <div id="modal-editar-metricas" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-header"><h3>Actualizar Antropometría</h3><button type="button" onclick="cerrarModales()" class="close-modal">&times;</button></div>
+            <div class="modal-header">
+                <h3><i class="icon-sliders"></i> Registrar Medición Corporal</h3>
+                <button type="button" onclick="cerrarModales()" class="close-modal">&times;</button>
+            </div>
             <form onsubmit="guardarMetricasAlumno(event)" class="modal-form">
-                <div class="form-row"><div class="form-group"><label>Peso (kg)</label><input type="number" step="0.1" id="m-input-peso" required></div><div class="form-group"><label>Músculo (kg)</label><input type="number" step="0.1" id="m-input-musculo" required></div></div>
-                <div class="form-row"><div class="form-group"><label>% Grasa</label><input type="number" step="0.1" id="m-input-grasa" required></div><div class="form-group"><label>Cintura (cm)</label><input type="number" step="0.1" id="m-input-cintura" required></div></div>
-                <div class="form-group"><label>Bíceps (cm)</label><input type="number" step="0.1" id="m-input-biceps" required></div>
-                <div class="modal-actions"><button type="button" onclick="cerrarModales()" class="btn btn-dark">Cancelar</button><button type="submit" class="btn btn-yellow">Guardar</button></div>
+                <div class="form-group">
+                    <label><i class="icon-calendar"></i> Fecha de la Medición</label>
+                    <input type="date" id="m-input-fecha" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Peso (kg)</label><input type="number" step="0.1" id="m-input-peso" required></div>
+                    <div class="form-group"><label>Músculo (kg)</label><input type="number" step="0.1" id="m-input-musculo" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>% Grasa</label><input type="number" step="0.1" id="m-input-grasa" required></div>
+                    <div class="form-group"><label>Cintura (cm)</label><input type="number" step="0.1" id="m-input-cintura" required></div>
+                </div>
+                <div class="form-group"><label>Bícep (cm)</label><input type="number" step="0.1" id="m-input-biceps" required></div>
+                <div class="modal-actions">
+                    <button type="button" onclick="cerrarModales()" class="btn btn-dark">Cancelar</button>
+                    <button type="submit" class="btn btn-yellow">Guardar Medición</button>
+                </div>
             </form>
         </div>
     </div>
@@ -402,8 +501,15 @@
         let fotoComidaSeleccionada = '';
 
         const baseDatosMetricas = {
-            'MatiasG': { peso: 78.5, musculo: 41.2, grasa: 14.8, cintura: 79.0, biceps: 38.5 },
-            'Lucas': { peso: 84.0, musculo: 43.5, grasa: 18.2, cintura: 85.0, biceps: 40.0 }
+            'MatiasG': [
+                { fecha: '2026-08-01', peso: 81.2, musculo: 39.5, grasa: 17.5, cintura: 83.0, biceps: 37.0 },
+                { fecha: '2026-09-01', peso: 79.8, musculo: 40.4, grasa: 16.0, cintura: 81.0, biceps: 38.0 },
+                { fecha: '2026-10-01', peso: 78.5, musculo: 41.2, grasa: 14.8, cintura: 79.0, biceps: 38.5 }
+            ],
+            'Lucas': [
+                { fecha: '2026-09-01', peso: 86.0, musculo: 42.0, grasa: 19.5, cintura: 87.0, biceps: 39.0 },
+                { fecha: '2026-10-01', peso: 84.0, musculo: 43.5, grasa: 18.2, cintura: 85.0, biceps: 40.0 }
+            ]
         };
 
         const baseDatosMensualidades = {
@@ -436,10 +542,22 @@
             'Lucas': { 'Lunes': [] }
         };
 
-        /* ============================================================
-           ASEGURAR ESTRUCTURA DE DATOS
-           ============================================================ */
+        function toggleMenuMobile(abrir) {
+            const sidebar = document.getElementById('app-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (window.innerWidth <= 768) {
+                if (abrir) {
+                    sidebar.classList.add('mobile-open');
+                    overlay.classList.add('active');
+                } else {
+                    sidebar.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                }
+            }
+        }
+
         function asegurarEstructura(alumno, dia) {
+            if (!baseDatosMetricas[alumno]) baseDatosMetricas[alumno] = [];
             if (!baseDatosRutinas[alumno]) baseDatosRutinas[alumno] = {};
             if (!baseDatosRutinas[alumno][dia]) baseDatosRutinas[alumno][dia] = [];
 
@@ -453,9 +571,6 @@
             if (!baseDatosComentarios[alumno][dia]) baseDatosComentarios[alumno][dia] = [];
         }
 
-        /* ============================================================
-           COMPRESIÓN Y OPTIMIZACIÓN AUTOMÁTICA DE IMÁGENES (CANVAS API)
-           ============================================================ */
         function optimizarImagen(archivo, anchoMaximo = 800, calidad = 0.75) {
             return new Promise((resolve) => {
                 if (!archivo.type.match(/image.*/)) {
@@ -527,9 +642,6 @@
             }
         }
 
-        /* ============================================================
-           MÓDULOS DE NAVEGACIÓN Y RENDERIZADO
-           ============================================================ */
         function activarModulo(modulo, elemento) {
             moduloActual = modulo;
             
@@ -572,6 +684,7 @@
                 if (btnAgregarCom) btnAgregarCom.classList.add('hidden');
             }
 
+            toggleMenuMobile(false);
             actualizarVistaCompleta();
         }
 
@@ -590,6 +703,7 @@
             document.getElementById('comentario-dia-nombre').textContent = dia;
             document.getElementById('progress-dia-label').textContent = dia;
             
+            toggleMenuMobile(false);
             actualizarVistaCompleta();
         }
 
@@ -613,16 +727,193 @@
 
             renderizarRutinas();
             renderizarDieta();
-            renderizarMetricas();
+            renderizarModuloMetricas();
             renderizarComentarios();
             renderizarAlertasVencimiento();
             actualizarBarraProgreso();
             sincronizarListasAlumnos();
         }
 
-        /* ============================================================
-           RENDERIZADO DE RUTINAS Y OPCIÓN DE ELIMINAR EJERCICIO
-           ============================================================ */
+        function renderizarModuloMetricas() {
+            const historial = baseDatosMetricas[alumnoSeleccionado] || [];
+            historial.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+            const selectA = document.getElementById('select-fecha-a');
+            const selectB = document.getElementById('select-fecha-b');
+            
+            selectA.innerHTML = '';
+            selectB.innerHTML = '';
+
+            if (historial.length === 0) {
+                document.getElementById('tbody-historial-metricas').innerHTML = '<tr><td colspan="7" class="empty-msg">Sin mediciones registradas.</td></tr>';
+                renderizarGraficoMetricas([]);
+                return;
+            }
+
+            historial.forEach((m, idx) => {
+                const optA = document.createElement('option');
+                optA.value = idx;
+                optA.textContent = m.fecha;
+                
+                const optB = document.createElement('option');
+                optB.value = idx;
+                optB.textContent = m.fecha;
+
+                selectA.appendChild(optA);
+                selectB.appendChild(optB);
+            });
+
+            selectA.selectedIndex = 0;
+            selectB.selectedIndex = historial.length - 1;
+
+            renderizarTablaHistorial();
+            actualizarComparativaMetricas();
+            renderizarGraficoMetricas(historial);
+        }
+
+        function actualizarComparativaMetricas() {
+            const historial = baseDatosMetricas[alumnoSeleccionado] || [];
+            if (historial.length === 0) return;
+
+            const idxA = parseInt(document.getElementById('select-fecha-a').value) || 0;
+            const idxB = parseInt(document.getElementById('select-fecha-b').value) || 0;
+
+            const mA = historial[idxA] || historial[0];
+            const mB = historial[idxB] || historial[historial.length - 1];
+
+            document.getElementById('val-peso').textContent = mB.peso;
+            document.getElementById('val-musculo').textContent = mB.musculo;
+            document.getElementById('val-grasa').textContent = mB.grasa;
+            document.getElementById('val-cintura').textContent = mB.cintura;
+            document.getElementById('val-biceps').textContent = mB.biceps;
+
+            mostrarDiferencia('diff-peso', mB.peso - mA.peso, 'kg', false);
+            mostrarDiferencia('diff-musculo', mB.musculo - mA.musculo, 'kg', true);
+            mostrarDiferencia('diff-grasa', mB.grasa - mA.grasa, '%', false);
+            mostrarDiferencia('diff-cintura', mB.cintura - mA.cintura, 'cm', false);
+            mostrarDiferencia('diff-biceps', mB.biceps - mA.biceps, 'cm', true);
+
+            const date1 = new Date(mA.fecha);
+            const date2 = new Date(mB.fecha);
+            const diffTime = Math.abs(date2 - date1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            document.getElementById('comp-status-badge').innerHTML = `<span>Comparando <strong>${mA.fecha}</strong> vs <strong>${mB.fecha}</strong> (${diffDays} días)</span>`;
+        }
+
+        function mostrarDiferencia(elementId, valor, unidad, positivoEsBueno = true) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            const num = valor.toFixed(1);
+            const signo = valor > 0 ? '+' : '';
+
+            el.textContent = `${signo}${num} ${unidad}`;
+            el.className = 'bm-trend';
+
+            if (valor === 0) {
+                el.classList.add('neutral');
+            } else if ((valor > 0 && positivoEsBueno) || (valor < 0 && !positivoEsBueno)) {
+                el.classList.add('positive');
+            } else {
+                el.classList.add('negative');
+            }
+        }
+
+        function renderizarTablaHistorial() {
+            const tbody = document.getElementById('tbody-historial-metricas');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const historial = baseDatosMetricas[alumnoSeleccionado] || [];
+
+            historial.forEach((m, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${m.fecha}</strong></td>
+                    <td>${m.peso} kg</td>
+                    <td>${m.musculo} kg</td>
+                    <td>${m.grasa} %</td>
+                    <td>${m.cintura} cm</td>
+                    <td>${m.biceps} cm</td>
+                    <td class="teacher-only">
+                        <button type="button" class="btn-icon-xs danger" onclick="eliminarMedicion(${idx})" title="Eliminar registro"><i class="icon-trash-2"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function eliminarMedicion(index) {
+            if (rolActual !== 'profesor') return;
+            if (confirm('¿Deseas eliminar este registro de medición?')) {
+                baseDatosMetricas[alumnoSeleccionado].splice(index, 1);
+                renderizarModuloMetricas();
+            }
+        }
+
+        function renderizarGraficoMetricas(historial) {
+            const svg = document.getElementById('svg-historial-chart');
+            const datesContainer = document.getElementById('chart-timeline-dates');
+            if (!svg || !datesContainer) return;
+
+            svg.innerHTML = `
+                <line x1="0" y1="30" x2="600" y2="30" stroke="rgba(255,255,255,0.05)"/>
+                <line x1="0" y1="70" x2="600" y2="70" stroke="rgba(255,255,255,0.05)"/>
+                <line x1="0" y1="110" x2="600" y2="110" stroke="rgba(255,255,255,0.05)"/>
+            `;
+            datesContainer.innerHTML = '';
+
+            if (historial.length < 2) {
+                datesContainer.innerHTML = '<span>Se requieren al menos 2 registros para trazar la curva</span>';
+                return;
+            }
+
+            const stepX = 600 / (historial.length - 1);
+            let pathPeso = '';
+            let pathMusculo = '';
+            let pathGrasa = '';
+
+            historial.forEach((m, i) => {
+                const x = i * stepX;
+                const yPeso = 130 - (m.peso * 1.1);
+                const yMusculo = 130 - (m.musculo * 1.8);
+                const yGrasa = 130 - (m.grasa * 3.5);
+
+                pathPeso += `${i === 0 ? 'M' : 'L'}${x} ${yPeso} `;
+                pathMusculo += `${i === 0 ? 'M' : 'L'}${x} ${yMusculo} `;
+                pathGrasa += `${i === 0 ? 'M' : 'L'}${x} ${yGrasa} `;
+
+                svg.innerHTML += `<circle cx="${x}" cy="${yPeso}" r="4" fill="#FFD400"/>`;
+                svg.innerHTML += `<circle cx="${x}" cy="${yMusculo}" r="4" fill="#22C55E"/>`;
+
+                const labelDate = document.createElement('span');
+                labelDate.textContent = m.fecha;
+                datesContainer.appendChild(labelDate);
+            });
+
+            svg.innerHTML += `<path d="${pathPeso}" fill="none" stroke="#FFD400" stroke-width="3"/>`;
+            svg.innerHTML += `<path d="${pathMusculo}" fill="none" stroke="#22C55E" stroke-width="3"/>`;
+            svg.innerHTML += `<path d="${pathGrasa}" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="4"/>`;
+        }
+
+        function guardarMetricasAlumno(event) {
+            event.preventDefault();
+            const fecha = document.getElementById('m-input-fecha').value;
+            const peso = parseFloat(document.getElementById('m-input-peso').value);
+            const musculo = parseFloat(document.getElementById('m-input-musculo').value);
+            const grasa = parseFloat(document.getElementById('m-input-grasa').value);
+            const cintura = parseFloat(document.getElementById('m-input-cintura').value);
+            const biceps = parseFloat(document.getElementById('m-input-biceps').value);
+
+            if (!baseDatosMetricas[alumnoSeleccionado]) baseDatosMetricas[alumnoSeleccionado] = [];
+
+            baseDatosMetricas[alumnoSeleccionado].push({ fecha, peso, musculo, grasa, cintura, biceps });
+
+            cerrarModales();
+            renderizarModuloMetricas();
+        }
+
         function renderizarRutinas() {
             const container = document.getElementById('exercises-container');
             if (!container) return;
@@ -697,9 +988,6 @@
             }
         }
 
-        /* ============================================================
-           RENDERIZADO DE DIETA
-           ============================================================ */
         function renderizarDieta() {
             const momentos = ['desayuno', 'media-manana', 'almuerzo', 'media-tarde', 'merienda', 'cena'];
             const dietaDia = baseDatosDietas[alumnoSeleccionado]?.[diaSeleccionado] || {};
@@ -760,25 +1048,6 @@
             }
         }
 
-        /* ============================================================
-           RENDERIZADO DE MÉTRICAS Y ALERTAS
-           ============================================================ */
-        function renderizarMetricas() {
-            const m = baseDatosMetricas[alumnoSeleccionado] || { peso: 0, musculo: 0, grasa: 0, cintura: 0, biceps: 0 };
-            
-            const elPeso = document.getElementById('val-peso');
-            const elMusculo = document.getElementById('val-musculo');
-            const elGrasa = document.getElementById('val-grasa');
-            const elCintura = document.getElementById('val-cintura');
-            const elBiceps = document.getElementById('val-biceps');
-
-            if (elPeso) elPeso.textContent = m.peso;
-            if (elMusculo) elMusculo.textContent = m.musculo;
-            if (elGrasa) elGrasa.textContent = m.grasa;
-            if (elCintura) elCintura.textContent = m.cintura;
-            if (elBiceps) elBiceps.textContent = m.biceps;
-        }
-
         function renderizarAlertasVencimiento() {
             const lista = document.getElementById('alertas-vencimiento-lista');
             if (!lista) return;
@@ -834,19 +1103,14 @@
             if (text) text.textContent = `${porcentaje}% Completado`;
         }
 
-        /* ============================================================
-           SISTEMA DE COMENTARIOS
-           ============================================================ */
         function publicarComentario(event) {
             event.preventDefault();
-            
             const inputTexto = document.getElementById('texto-comentario');
             const texto = inputTexto.value.trim();
 
             if (!texto) return false;
 
             asegurarEstructura(alumnoSeleccionado, diaSeleccionado);
-
             const autor = rolActual === 'profesor' ? 'Coach FernandoM' : alumnoSeleccionado;
 
             baseDatosComentarios[alumnoSeleccionado][diaSeleccionado].push({
@@ -857,7 +1121,6 @@
 
             inputTexto.value = '';
             renderizarComentarios();
-
             return false;
         }
 
@@ -904,9 +1167,6 @@
             });
         }
 
-        /* ============================================================
-           GESTIÓN DE FORMULARIOS, MODALES Y ELIMINAR ALUMNO
-           ============================================================ */
         function guardarNuevoEjercicio(event) {
             event.preventDefault();
             const nombre = document.getElementById('new-ex-name').value;
@@ -960,19 +1220,6 @@
             actualizarBarraProgreso();
         }
 
-        function guardarMetricasAlumno(event) {
-            event.preventDefault();
-            baseDatosMetricas[alumnoSeleccionado] = {
-                peso: parseFloat(document.getElementById('m-input-peso').value),
-                musculo: parseFloat(document.getElementById('m-input-musculo').value),
-                grasa: parseFloat(document.getElementById('m-input-grasa').value),
-                cintura: parseFloat(document.getElementById('m-input-cintura').value),
-                biceps: parseFloat(document.getElementById('m-input-biceps').value)
-            };
-            cerrarModales();
-            renderizarMetricas();
-        }
-
         function guardarMensualidad(event) {
             event.preventDefault();
             baseDatosMensualidades[alumnoSeleccionado] = {
@@ -997,7 +1244,7 @@
             if (!codigo) return;
 
             baseDatosMensualidades[codigo] = { inicio, fin, monto, avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=80' };
-            baseDatosMetricas[codigo] = { peso: 70.0, musculo: 35.0, grasa: 15.0, cintura: 75.0, biceps: 32.0 };
+            baseDatosMetricas[codigo] = [];
             baseDatosRutinas[codigo] = { 'Lunes': [], 'Martes': [], 'Miércoles': [], 'Jueves': [], 'Viernes': [], 'Sábado': [], 'Domingo': [] };
             baseDatosDietas[codigo] = { 'Lunes': {}, 'Martes': {}, 'Miércoles': {}, 'Jueves': {}, 'Viernes': {}, 'Sábado': {}, 'Domingo': {} };
             baseDatosComentarios[codigo] = { 'Lunes': [], 'Martes': [], 'Miércoles': [], 'Jueves': [], 'Viernes': [], 'Sábado': [], 'Domingo': [] };
@@ -1075,9 +1322,6 @@
             if (kpiTotal) kpiTotal.textContent = `${Object.keys(baseDatosMensualidades).length} Activos`;
         }
 
-        /* ============================================================
-           AUTENTICACIÓN Y ROLES
-           ============================================================ */
         function validarAcceso(event) {
             event.preventDefault();
             const inputCodigo = document.getElementById('user-code').value.trim();
@@ -1114,12 +1358,7 @@
             document.getElementById('modal-editar-mensualidad').classList.add('active'); 
         }
         function abrirModalMetricas() { 
-            const m = baseDatosMetricas[alumnoSeleccionado] || { peso: 0, musculo: 0, grasa: 0, cintura: 0, biceps: 0 };
-            document.getElementById('m-input-peso').value = m.peso;
-            document.getElementById('m-input-musculo').value = m.musculo;
-            document.getElementById('m-input-grasa').value = m.grasa;
-            document.getElementById('m-input-cintura').value = m.cintura;
-            document.getElementById('m-input-biceps').value = m.biceps;
+            document.getElementById('m-input-fecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('modal-editar-metricas').classList.add('active'); 
         }
         
